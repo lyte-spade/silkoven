@@ -1,1 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silk Oven | Brand Lab Fix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0A0A0A;
+            --pink: #F00090; 
+            --gold: #E6D5B8; 
+            /* These update dynamically via JS now */
+            --pink-light: #ff4dc4;
+            --pink-dark: #b3006b;
+        }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--gold);
+            font-family: 'Inter', sans-serif;
+            transition: background 0.4s ease;
+        }
+
+        /* --- THE LAB HUD --- */
+        .lab-hud {
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .scroller {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 6px 15px;
+            border-radius: 50px;
+            border: 1px solid var(--gold);
+        }
+
+        .btn-step { background: none; border: none; color: var(--pink); font-size: 20px; cursor: pointer; padding: 0 5px; }
+        .p-display { font-size: 11px; font-weight: 600; min-width: 80px; text-align: center; }
+
+        .freedom-toggle { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--pink); cursor: pointer; text-transform: uppercase; }
+
+        .picker-group { display: none; align-items: center; gap: 10px; }
+        .hex-input { background: none; border: none; border-bottom: 1px solid var(--pink); color: #fff; width: 80px; font-family: monospace; font-size: 12px; text-align: center; outline: none; }
+
+        /* --- WEBSITE CONTENT --- */
+        .hero { padding: 80px 20px; text-align: center; }
+        .logo { font-family: 'Playfair Display', serif; font-style: italic; font-size: 4rem; color: var(--pink); margin-bottom: 10px; }
+        .tagline { font-size: 14px; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 40px; opacity: 0.8; }
+
+        /* FIXED DYNAMIC GRADIENT BUTTON */
+        .btn-main {
+            display: inline-block;
+            padding: 18px 50px;
+            background: linear-gradient(135deg, var(--pink-light) 0%, var(--pink) 50%, var(--pink-dark) 100%);
+            color: #000;
+            text-decoration: none;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+
+        /* --- PRODUCT TILES --- */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 40px; padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
+        .item-card {
+            background: #111;
+            border-radius: 40px;
+            border: 1px solid rgba(230, 213, 184, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* FIXED METALLIC RIBBON TAG */
+        .ribbon-tag {
+            position: absolute;
+            top: 25px;
+            left: -35px;
+            background: linear-gradient(145deg, #fff 0%, var(--gold) 45%, #b5a384 100%);
+            color: #000;
+            padding: 8px 40px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transform: rotate(-45deg);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+
+        /* PINK METALLIC VARIANT */
+        .ribbon-tag.pink {
+            background: linear-gradient(145deg, var(--pink-light) 0%, var(--pink) 50%, var(--pink-dark) 100%);
+            color: #fff;
+        }
+
+        .item-img { width: 100%; height: 380px; object-fit: cover; display: block; }
+        .info { padding: 30px; }
+        .item-name { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 8px; }
+        .item-price { color: var(--pink); font-weight: 600; font-size: 1.2rem; display: block; margin-bottom: 25px; }
+
+        .buy-btn {
+            width: 100%;
+            padding: 16px;
+            background: transparent;
+            border: 2px solid var(--pink);
+            color: var(--pink);
+            border-radius: 100px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .buy-btn:hover { background: var(--pink); color: #000; }
+
+    </style>
+</head>
+<body>
+
+    <div class="lab-hud">
+        <label class="freedom-toggle">
+            <span>Freedom Mode</span>
+            <input type="checkbox" id="freedomCheck" onchange="toggleFreedom()">
+        </label>
+
+        <div class="scroller" id="paletteScroller">
+            <button class="btn-step" onclick="step(-1)">&#8249;</button>
+            <span class="p-display" id="pNum">PALETTE 1</span>
+            <button class="btn-step" onclick="step(1)">&#8250;</button>
+        </div>
+
+        <div class="picker-group" id="pickerGroup">
+            <input type="color" id="pinkPicker" oninput="manualUpdate('pink', this.value)">
+            <input type="text" id="pinkHex" class="hex-input" onchange="manualUpdate('pink', this.value)">
+            <input type="color" id="goldPicker" oninput="manualUpdate('gold', this.value)">
+            <input type="text" id="goldHex" class="hex-input" onchange="manualUpdate('gold', this.value)">
+        </div>
+    </div>
+
+    <section class="hero">
+        <h1 class="logo">Silk Oven</h1>
+        <p class="tagline">Baked in silk like form.</p>
+        <a href="#" class="btn-main">Contact us Now!</a>
+    </section>
+
+    <div class="grid">
+        <div class="item-card">
+            <div class="ribbon-tag">Bestseller</div>
+            <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=1000&auto=format&fit=crop" class="item-img">
+            <div class="info">
+                <h3 class="item-name">The Velvet Silk</h3>
+                <span class="item-price">₹1,450</span>
+                <button class="buy-btn">Buy Now</button>
+            </div>
+        </div>
+
+        <div class="item-card">
+            <div class="ribbon-tag pink">New Drop</div>
+            <img src="https://images.unsplash.com/photo-1550617931-e17a7b70dce2?q=80&w=1000&auto=format&fit=crop" class="item-img">
+            <div class="info">
+                <h3 class="item-name">Rose Glaze Trio</h3>
+                <span class="item-price">₹650</span>
+                <button class="buy-btn">Buy Now</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const variants = [
+            { pink: "#F00090", gold: "#E6D5B8" },
+            { pink: "#D64C6D", gold: "#F7E6CA" },
+            { pink: "#DE3163", gold: "#A68A64" },
+            { pink: "#DE5D83", gold: "#E6D5B8" },
+            { pink: "#C21E56", gold: "#F7E7CE" },
+            { pink: "#F400A1", gold: "#E6D5B8" },
+            { pink: "#E58FA2", gold: "#A68A64" }
+        ];
+
+        let currentIdx = 0;
+        let isFreedom = false;
+
+        // Function to calculate a lighter and darker shade of the hex for the gradient
+        function adjustColor(hex, amt) {
+            let usePound = true;
+            if (hex[0] == "#") { hex = hex.slice(1); usePound = true; }
+            let num = parseInt(hex, 16);
+            let r = (num >> 16) + amt;
+            if (r > 255) r = 255; else if (r < 0) r = 0;
+            let b = ((num >> 8) & 0x00FF) + amt;
+            if (b > 255) b = 255; else if (b < 0) b = 0;
+            let g = (num & 0x0000FF) + amt;
+            if (g > 255) g = 255; else if (g < 0) g = 0;
+            return (usePound ? "#" : "") + (g | (b << 8) | (r << 16)).toString(16).padStart(6, '0');
+        }
+
+        function applyColors(p, g) {
+            document.documentElement.style.setProperty('--pink', p);
+            document.documentElement.style.setProperty('--gold', g);
+            
+            // Calculate gradient tones dynamically
+            document.documentElement.style.setProperty('--pink-light', adjustColor(p, 40));
+            document.documentElement.style.setProperty('--pink-dark', adjustColor(p, -40));
+            
+            document.getElementById('pinkHex').value = p.toUpperCase();
+            document.getElementById('goldHex').value = g.toUpperCase();
+            document.getElementById('pinkPicker').value = p;
+            document.getElementById('goldPicker').value = g;
+        }
+
+        function step(dir) {
+            currentIdx = (currentIdx + dir + variants.length) % variants.length;
+            const v = variants[currentIdx];
+            applyColors(v.pink, v.gold);
+            document.getElementById('pNum').innerText = `PALETTE ${currentIdx + 1}`;
+        }
+
+        function manualUpdate(type, value) {
+            if (value[0] !== '#') value = '#' + value;
+            applyColors(type === 'pink' ? value : document.getElementById('pinkHex').value, 
+                        type === 'gold' ? value : document.getElementById('goldHex').value);
+        }
+
+        function toggleFreedom() {
+            isFreedom = document.getElementById('freedomCheck').checked;
+            document.getElementById('pickerGroup').style.display = isFreedom ? 'flex' : 'none';
+            document.getElementById('paletteScroller').style.opacity = isFreedom ? '0.2' : '1';
+            if(!isFreedom) step(0);
+        }
+
+        step(0);
+    </script>
+</body>
+</html>
